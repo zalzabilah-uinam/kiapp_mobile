@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:upgrader/upgrader.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'config/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/download_provider.dart';
@@ -9,7 +7,7 @@ import 'providers/history_provider.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
-import 'services/upgrade_store.dart';
+import 'services/app_update_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
@@ -24,17 +22,18 @@ void main() {
 class SosmedDownloaderApp extends StatelessWidget {
   const SosmedDownloaderApp({super.key});
 
-  static final _upgrader = Upgrader(
-    storeController: UpgraderStoreController(
-      onAndroid: () => GitHubReleasesStore(
-        owner: 'zalzabilah-uinam',
-        repo: 'kiapp_mobile',
-      ),
-    ),
-    debugLogging: true,
-    debugDisplayAlways: true,
-    durationUntilAlertAgain: const Duration(days: 0),
-  );
+  /// Konfigurasi upgrader — GitHub Releases.
+  static final _upgradeAlert = _initUpgradeAlert();
+
+  static Widget _initUpgradeAlert() {
+    AppUpdateService().createUpgrader(
+      owner: 'zalzabilah-uinam',
+      repo: 'kiapp_mobile',
+    );
+    return AppUpdateService().buildUpgradeAlert(
+      child: const AuthGate(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,17 +50,7 @@ class SosmedDownloaderApp extends StatelessWidget {
         title: 'Sosmed Downloader',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark(),
-        home: UpgradeAlert(
-          upgrader: _upgrader,
-          onUpdate: () {
-            final url = _upgrader.versionInfo?.appStoreListingURL;
-            if (url != null && url.isNotEmpty) {
-              launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-            }
-            return false; // skip sendUserToAppStore (salah mode)
-          },
-          child: const AuthGate(),
-        ),
+        home: _upgradeAlert,
       ),
     );
   }

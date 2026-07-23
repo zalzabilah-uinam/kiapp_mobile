@@ -73,7 +73,7 @@ jobs:
           name: app-release-aab
           path: build/app/outputs/bundle/release/app-release.aab
 
-      - name: Build APK
+      - name: Build APK (universal — untuk upgrader download)
         if: ${{ github.event_name == 'push' || inputs.build_apk }}
         run: |
           PROPS=""
@@ -83,14 +83,14 @@ jobs:
                    -PKEY_ALIAS=${{ secrets.KEY_ALIAS }} \
                    -PKEY_PASSWORD=${{ secrets.KEY_PASSWORD }}"
           fi
-          flutter build apk --release --split-per-abi $PROPS
+          flutter build apk --release $PROPS
 
-      - name: Upload APKs
+      - name: Upload APK
         if: ${{ github.event_name == 'push' || inputs.build_apk }}
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/*.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Get version
         id: version
@@ -111,7 +111,7 @@ jobs:
           artifactErrorsFailBuild: false
           artifacts: |
             build/app/outputs/bundle/release/app-release.aab
-            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-release.apk
 
       - name: Shorebird patch
         if: ${{ inputs.shorebird_patch }}

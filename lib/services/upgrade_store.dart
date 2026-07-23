@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:upgrader/upgrader.dart';
 import 'package:version/version.dart';
 
+/// Store khusus GitHub Releases.
+/// Mengambil daftar release dari repo GitHub, mencari versi tertinggi,
+/// lalu meresolve URL download APK dari assets release.
 class GitHubReleasesStore extends UpgraderStore {
   final String owner;
   final String repo;
@@ -15,7 +18,39 @@ class GitHubReleasesStore extends UpgraderStore {
     required String? country,
     required String? language,
   }) async {
-    // Ambil semua releases (termasuk draft) via API
+    try {
+      final releases = await _fetchReleases(state);
+      if (releases.isEmpty) {
+        return UpgraderVersionInfo(installedVersion: installedVersion);
+      }
+
+      final best = _findBestRelease(releases);
+      if (best == null) {
+        return UpgraderVersionInfo(installedVersion: installedVersion);
+      }
+
+      final apkUrl = _resolveApkUrl(releases, best.tagName);
+
+      return UpgraderVersionInfo(
+        installedVersion: installedVersion,
+        appStoreVersion: best.version,
+        appStoreListingURL: apkUrl ?? best.htmlUrl,
+        releaseNotes: best.releaseNotes,
+      );
+    } catch (e) {
+      // Gagal total — silent, biar upgrader ga nampilin apa-apa
+      return UpgraderVersionInfo(installedVersion: installedVersion);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Private helpers
+  // ------------------------------------------------------------------
+
+  /// Fetch semua releases (published) dari GitHub API.
+  Future<List<Map<String, dynamic>>> _fetchReleases(
+    UpgraderState state,
+  ) async {
     final uri = Uri.parse(
       'https://api.github.com/repos/$owner/$repo/releases',
     );
@@ -28,77 +63,99 @@ class GitHubReleasesStore extends UpgraderStore {
       },
     );
 
-    if (response.statusCode != 200) {
-      return UpgraderVersionInfo(installedVersion: installedVersion);
-    }
+    if (response.statusCode != 200) return [];
+    final body = jsonDecode(response.body);
+    if (body is! List) return [];
 
-    final releases = jsonDecode(response.body) as List;
+    return body.cast<Map<String, dynamic>>();
+  }
 
-    if (releases.isEmpty) {
-      return UpgraderVersionInfo(installedVersion: installedVersion);
-    }
-
-    // Cari release dengan tag tertinggi
-    String bestTag = '';
-    Version? bestVersion;
-    String? bestUrl;
-    String? bestNotes;
+  /// Cari release dengan tag version tertinggi.
+  _ReleaseInfo? _findBestRelease(List<Map<String, dynamic>> releases) {
+    _ReleaseInfo? best;
 
     for (final r in releases) {
-      final tagName = r['tag_name'] as String;
-      final versionStr = tagName.replaceFirst(RegExp(r'^v'), '');
-      final cleanVersion = versionStr.split('+').first;
+      final tagName = r['tag_name'] as String? ?? '';
+      final version = _parseTagVersion(tagName);
+      if (version == null) continue;
 
-      try {
-        final v = Version.parse(cleanVersion);
-        if (bestVersion == null || v > bestVersion) {
-          bestVersion = v;
-          bestTag = tagName;
-          bestUrl = r['html_url'] as String;
-          bestNotes = r['body'] as String?;
-        }
-      } catch (_) {
-        // skip kalo versi ga valid
+      if (best == null || version > best.version) {
+        best = _ReleaseInfo(
+          tagName: tagName,
+          version: version,
+          htmlUrl: r['html_url'] as String?,
+          releaseNotes: r['body'] as String?,
+        );
       }
     }
 
-    if (bestVersion == null) {
-      return UpgraderVersionInfo(installedVersion: installedVersion);
-    }
+    return best;
+  }
 
-    // Cari asset APK di release terbaik
-    String? apkUrl;
-    final bestRelease = releases.firstWhere(
-      (r) => r['tag_name'] == bestTag,
+  /// Parse version dari tag name (support format: v1.2.3, v1.2.3+build.456).
+  Version? _parseTagVersion(String tag) {
+    final raw = tag.replaceFirst(RegExp(r'^v'), '').split('+').first;
+    try {
+      return Version.parse(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Cari asset APK dari release terbaik.
+  /// Prioritas: arm64-v8a → APK pertama → AAB → fallback null.
+  String? _resolveApkUrl(
+    List<Map<String, dynamic>> releases,
+    String bestTag,
+  ) {
+    final release = releases.cast<Map<String, dynamic>?>().firstWhere(
+      (r) => r?['tag_name'] == bestTag,
       orElse: () => null,
     );
-    if (bestRelease != null) {
-      final assets = bestRelease['assets'] as List? ?? [];
-      // Cari APK arm64-v8a (paling umum), fallback ke APK pertama
-      for (final asset in assets) {
-        final name = asset['name'] as String? ?? '';
-        if (name.contains('arm64-v8a') && name.endsWith('.apk')) {
-          apkUrl = asset['browser_download_url'] as String?;
-          break;
-        }
-      }
-      if (apkUrl == null) {
-        // Fallback ke APK pertama
-        for (final asset in assets) {
-          final name = asset['name'] as String? ?? '';
-          if (name.endsWith('.apk') || name.endsWith('.aab')) {
-            apkUrl = asset['browser_download_url'] as String?;
-            break;
-          }
-        }
+    if (release == null) return null;
+
+    final assets = (release['assets'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    if (assets.isEmpty) return null;
+
+    // Prioritas 1: arm64-v8a APK
+    for (final a in assets) {
+      final name = (a['name'] as String? ?? '').toLowerCase();
+      if (name.contains('arm64-v8a') && name.endsWith('.apk')) {
+        return a['browser_download_url'] as String?;
       }
     }
 
-    return UpgraderVersionInfo(
-      installedVersion: installedVersion,
-      appStoreVersion: bestVersion,
-      appStoreListingURL: apkUrl ?? bestUrl,
-      releaseNotes: bestNotes,
-    );
+    // Prioritas 2: APK apa pun
+    for (final a in assets) {
+      final name = (a['name'] as String? ?? '').toLowerCase();
+      if (name.endsWith('.apk')) {
+        return a['browser_download_url'] as String?;
+      }
+    }
+
+    // Prioritas 3: AAB
+    for (final a in assets) {
+      final name = (a['name'] as String? ?? '').toLowerCase();
+      if (name.endsWith('.aab')) {
+        return a['browser_download_url'] as String?;
+      }
+    }
+
+    return null;
   }
+}
+
+/// Data class hasil parsing release.
+class _ReleaseInfo {
+  final String tagName;
+  final Version version;
+  final String? htmlUrl;
+  final String? releaseNotes;
+
+  _ReleaseInfo({
+    required this.tagName,
+    required this.version,
+    this.htmlUrl,
+    this.releaseNotes,
+  });
 }
