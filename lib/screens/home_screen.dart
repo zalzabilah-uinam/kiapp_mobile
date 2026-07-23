@@ -61,29 +61,22 @@ class _HomeScreenState extends State<HomeScreen>
     final url = _urlCtrl.text.trim();
     final dp = context.read<DownloadProvider>();
 
-    // Jalan di background — user tetep bisa navigasi
-    unawaited(dp.download(url));
-
+    final ok = await dp.download(url);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            SizedBox(
-              height: 18, width: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-            ),
-            SizedBox(width: 12),
-            Text('Download berjalan di background...'),
-          ],
+
+    if (ok && dp.result != null) {
+      _urlCtrl.clear();
+      _showResult(dp.result!);
+    } else if (dp.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(dp.error!),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        backgroundColor: AppTheme.darkCard,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    _urlCtrl.clear();
+      );
+    }
   }
 
   void _showLogResult(DownloadResult result) {

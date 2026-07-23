@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../config/theme.dart';
 import '../services/download_service.dart';
 import '../services/file_service.dart';
 import '../widgets/index.dart';
+
+/// Grup media per tipe (video/audio/image) biar user bisa pilih kualitas dulu.
+class _TypeGroup {
+  final String type;
+  final IconData icon;
+  final String label;
+  final List<MediaItem> items;
+  int selectedIndex;
+
+  _TypeGroup({
+    required this.type,
+    required this.icon,
+    required this.label,
+    required this.items,
+    this.selectedIndex = 0,
+  });
+}
 
 class ResultScreen extends StatefulWidget {
   final DownloadResult result;
@@ -22,10 +38,14 @@ class _ResultScreenState extends State<ResultScreen>
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
   bool _previewReady = false;
-  bool _downloading = false;
   String? _downloadMsg;
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
+
+  /// Grup yang lagi didownload (key = type:index)
+  String? _downloadingKey;
+
+  List<_TypeGroup> _groups = [];
 
   @override
   void initState() {
@@ -36,7 +56,49 @@ class _ResultScreenState extends State<ResultScreen>
     );
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutQuad);
     _animCtrl.forward();
+    _buildGroups();
     _initPreview();
+  }
+
+  void _buildGroups() {
+    final grouped = <String, List<MediaItem>>{};
+    for (final m in widget.result.media) {
+      grouped.putIfAbsent(m.type ?? 'other', () => []).add(m);
+    }
+
+    _groups = [];
+    for (final entry in grouped.entries) {
+      final t = entry.key;
+      if (t == 'video') {
+        _groups.add(_TypeGroup(
+          type: t,
+          icon: Icons.videocam_rounded,
+          label: 'Video',
+          items: entry.value,
+        ));
+      } else if (t == 'audio') {
+        _groups.add(_TypeGroup(
+          type: t,
+          icon: Icons.audiotrack_rounded,
+          label: 'Audio',
+          items: entry.value,
+        ));
+      } else if (t == 'image') {
+        _groups.add(_TypeGroup(
+          type: t,
+          icon: Icons.image_rounded,
+          label: 'Gambar',
+          items: entry.value,
+        ));
+      } else {
+        _groups.add(_TypeGroup(
+          type: t,
+          icon: Icons.insert_drive_file_rounded,
+          label: t,
+          items: entry.value,
+        ));
+      }
+    }
   }
 
   void _initPreview() {
@@ -72,9 +134,11 @@ class _ResultScreenState extends State<ResultScreen>
     }
   }
 
-  Future<void> _downloadMedia(MediaItem media) async {
+  Future<void> _downloadGroup(_TypeGroup group) async {
+    final media = group.items[group.selectedIndex];
+    final key = '${group.type}:${group.selectedIndex}';
     setState(() {
-      _downloading = true;
+      _downloadingKey = key;
       _downloadMsg = null;
     });
 
@@ -82,16 +146,17 @@ class _ResultScreenState extends State<ResultScreen>
       final path = await _fileService.downloadToDevice(
         media.url,
         fileName: 'sosmed_${DateTime.now().millisecondsSinceEpoch}',
+        mediaType: media.type,
       );
       if (!mounted) return;
       setState(() {
-        _downloading = false;
+        _downloadingKey = null;
         _downloadMsg = 'Tersimpan di: $path';
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _downloading = false;
+        _downloadingKey = null;
         _downloadMsg = 'Gagal download: $e';
       });
     }
@@ -177,159 +242,49 @@ class _ResultScreenState extends State<ResultScreen>
                   const SizedBox(height: 16),
                 ],
 
-                // ── Media Items ──
-                ...result.media.asMap().entries.map((entry) {
-                  final i = entry.key;
-                  final media = entry.value;
-                  final isVideo = media.type == 'video' ||
-                      media.format?.contains('mp4') == true;
+                // ── Grup Media ──
+                ..._groups.map((group) => _buildGroupCard(group)),
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: GlassCard(
-                      dark: true,
-                      radius: 16,
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  gradient: AppTheme.primaryGradient,
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Icon(
-                                  isVideo ? Icons.videocam : Icons.image,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${isVideo ? 'Video' : 'Gambar'} ${i + 1}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(fontSize: 14),
-                                    ),
-                                    if (media.quality != null)
-                                      Text('Kualitas: ${media.quality}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium),
-                                    if (media.format != null)
-                                      Text('Format: ${media.format}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _downloading
-                                  ? null
-                                  : () => _downloadMedia(media),
-                              icon: _downloading
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white))
-                                  : const Icon(Icons.download, size: 20),
-                              label: Text(_downloading
-                                  ? 'Mengunduh...'
-                                  : 'Unduh ke Device'),
-                            ),
-                          ),
-                          if (_downloadMsg != null) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: _downloadMsg!.contains('Gagal')
-                                    ? AppTheme.error.withValues(alpha: 0.15)
-                                    : AppTheme.success.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    _downloadMsg!.contains('Gagal')
-                                        ? Icons.error_outline
-                                        : Icons.check_circle_outline,
-                                    size: 14,
-                                    color: _downloadMsg!.contains('Gagal')
-                                        ? AppTheme.error
-                                        : AppTheme.success,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      _downloadMsg!,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: _downloadMsg!.contains('Gagal')
-                                            ? AppTheme.error
-                                            : AppTheme.success,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-
-                // ── Copy URL ──
-                if (result.media.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  SizedBox(
+                // ── Status message ──
+                if (_downloadMsg != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
                     width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Clipboard.setData(
-                            ClipboardData(text: result.media.first.url));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('URL media tersalin!'),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _downloadMsg!.contains('Gagal')
+                          ? AppTheme.error.withValues(alpha: 0.15)
+                          : AppTheme.success.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _downloadMsg!.contains('Gagal')
+                              ? Icons.error_outline
+                              : Icons.check_circle_outline,
+                          size: 18,
+                          color: _downloadMsg!.contains('Gagal')
+                              ? AppTheme.error
+                              : AppTheme.success,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _downloadMsg!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: _downloadMsg!.contains('Gagal')
+                                  ? AppTheme.error
+                                  : AppTheme.success,
+                            ),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.copy, size: 20),
-                      label: const Text('Salin URL Media'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primaryLight,
-                        side: BorderSide(
-                            color: AppTheme.primaryLight.withValues(alpha: 0.4)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
+
                 const SizedBox(height: 20),
               ],
             ),
@@ -337,6 +292,191 @@ class _ResultScreenState extends State<ResultScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildGroupCard(_TypeGroup group) {
+    final isDownloading = _downloadingKey != null &&
+        _downloadingKey!.startsWith('${group.type}:');
+    final sel = group.items[group.selectedIndex];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: GlassCard(
+        dark: true,
+        radius: 16,
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header grup ──
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(group.icon, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Text(
+                  group.label,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                if (group.items.length > 1) ...[
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${group.items.length} opsi',
+                      style: const TextStyle(
+                        color: AppTheme.primaryLight,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // ── Chips kualitas ──
+            if (group.items.length > 1)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: group.items.asMap().entries.map((e) {
+                  final i = e.key;
+                  final m = e.value;
+                  final selected = group.selectedIndex == i;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => group.selectedIndex = i);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppTheme.primary.withValues(alpha: 0.25)
+                            : AppTheme.glassWhite,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: selected
+                              ? AppTheme.primary
+                              : Colors.white.withValues(alpha: 0.1),
+                          width: selected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Text(
+                        _qualityLabel(m),
+                        style: TextStyle(
+                          color: selected ? AppTheme.primaryLight : Colors.white70,
+                          fontSize: 13,
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              )
+            else
+              // Cuma 1 item — tampilkan info
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  _qualityLabel(group.items.first),
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ),
+
+            const SizedBox(height: 14),
+
+            // ── Info selected ──
+            if (sel.format != null || sel.quality != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    if (sel.format != null)
+                      _infoChip(sel.format!),
+                    if (sel.format != null && sel.quality != null)
+                      const SizedBox(width: 8),
+                    if (sel.quality != null)
+                      _infoChip(sel.quality!),
+                  ],
+                ),
+              ),
+
+            // ── Tombol download ──
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: isDownloading ? null : () => _downloadGroup(group),
+                icon: isDownloading
+                    ? const SizedBox(
+                        width: 18, height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Icon(
+                        group.type == 'audio' ? Icons.music_note : Icons.download,
+                        size: 20,
+                      ),
+                label: Text(isDownloading ? 'Mengunduh...' : 'Unduh ${group.label} Ini'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: group.type == 'audio'
+                      ? AppTheme.accent?.withValues(alpha: 0.8)
+                      : AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoChip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white60, fontSize: 12),
+      ),
+    );
+  }
+
+  String _qualityLabel(MediaItem m) {
+    final parts = <String>[];
+    if (m.quality != null && m.quality!.isNotEmpty) {
+      parts.add(m.quality!.toUpperCase());
+    }
+    if (m.format != null && m.format!.isNotEmpty) {
+      parts.add(m.format!);
+    }
+    if (m.width != null && m.height != null) {
+      parts.add('${m.width}x${m.height}');
+    }
+    return parts.isNotEmpty ? parts.join(' · ') : 'Default';
   }
 
   Widget _buildThumbnail(String? url) {
