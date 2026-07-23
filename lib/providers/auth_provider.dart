@@ -27,25 +27,40 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> tryAutoLogin() async {
     final key = await _storage.read(key: 'api_key');
+    final savedUserId = await _storage.read(key: 'user_id');
+    final savedEmail = await _storage.read(key: 'email');
+
     if (key != null && key.isNotEmpty) {
       _apiKey = key;
       _apiClient.setApiKey(key);
+      // Coba validasi key ke server biar tau masih valid
       try {
         final profile = await _authService.getProfile();
-        _userId = profile['user']['id'] as String?;
-        _email = profile['user']['email'] as String?;
+        final user = profile['user'] as Map<String, dynamic>?;
+        _userId = user?['id'] as String? ?? savedUserId;
+        _email = user?['email'] as String? ?? savedEmail;
         _status = AuthStatus.authenticated;
       } on ApiException catch (e) {
-        // Hapus key hanya kalo server tolak (401/404) — key beneran invalid
         if (e.statusCode == 401 || e.statusCode == 404) {
           await _storage.delete(key: 'api_key');
+          await _storage.delete(key: 'user_id');
+          await _storage.delete(key: 'email');
           _apiKey = null;
           _apiClient.setApiKey(null);
+          _status = AuthStatus.unauthenticated;
+        } else if (e.statusCode == 500 || e.statusCode >= 502) {
+          // Server error — jangan hapus key, simpan session dari storage aja
+          _userId = savedUserId;
+          _email = savedEmail;
+          _status = AuthStatus.authenticated;
+        } else {
+          _status = AuthStatus.unauthenticated;
         }
-        _status = AuthStatus.unauthenticated;
       } catch (_) {
-        // Error jaringan/timeout — jangan hapus key, biar coba lagi nanti
-        _status = AuthStatus.unauthenticated;
+        // Error jaringan — jangan hapus key, pake data dari storage aja
+        _userId = savedUserId;
+        _email = savedEmail;
+        _status = AuthStatus.authenticated;
       }
     } else {
       _status = AuthStatus.unauthenticated;
@@ -130,6 +145,8 @@ class AuthProvider extends ChangeNotifier {
     _email = email;
     _apiClient.setApiKey(apiKey);
     await _storage.write(key: 'api_key', value: apiKey);
+    await _storage.write(key: 'user_id', value: userId);
+    await _storage.write(key: 'email', value: email);
   }
 
   void clearError() {
