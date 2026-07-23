@@ -1,24 +1,23 @@
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'download_service.dart';
+import 'download_location_service.dart';
 
 class FileService {
   final Dio _dio = Dio();
+  final DownloadLocationService _locationService;
 
-  /// Download media ke direktori download publik.
-  /// [mediaType] dipakai buat nentuin extension fallback (video→.mp4, audio→.mp3, image→.jpg).
+  FileService(this._locationService);
+
+  /// Download media ke folder pilihan user.
+  /// [mediaType] dipakai buat nentuin extension fallback.
   /// Return path file yang sudah di-download.
   Future<String> downloadToDevice(
     String url, {
     String? fileName,
     String? mediaType,
   }) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final downloadDir = Directory('${dir.path}/Downloads');
-    if (!await downloadDir.exists()) {
-      await downloadDir.create(recursive: true);
-    }
+    final downloadDir = await _locationService.getDownloadDirectory();
 
     final ext = _resolveExtension(url, mediaType: mediaType);
     final name = fileName ??
@@ -31,7 +30,6 @@ class FileService {
 
   /// Resolve extension dari URL + fallback berdasarkan type.
   String _resolveExtension(String url, {String? mediaType}) {
-    // Coba dari URL path
     try {
       final uri = Uri.parse(url);
       final path = uri.path;
@@ -41,7 +39,6 @@ class FileService {
       }
     } catch (_) {}
 
-    // Fallback berdasarkan type
     switch (mediaType) {
       case 'video':
         return '.mp4';

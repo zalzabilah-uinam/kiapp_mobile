@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import 'package:open_file_plus/open_file_plus.dart';
 import '../config/theme.dart';
 import '../services/download_service.dart';
 import '../services/file_service.dart';
+import '../services/download_location_service.dart';
 import '../widgets/index.dart';
 
 /// Grup media per tipe (video/audio/image) biar user bisa pilih kualitas dulu.
@@ -34,7 +36,8 @@ class ResultScreen extends StatefulWidget {
 
 class _ResultScreenState extends State<ResultScreen>
     with SingleTickerProviderStateMixin {
-  final FileService _fileService = FileService();
+  final DownloadLocationService _locationService = DownloadLocationService();
+  late final FileService _fileService = FileService(_locationService);
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
   bool _previewReady = false;
@@ -151,8 +154,9 @@ class _ResultScreenState extends State<ResultScreen>
       if (!mounted) return;
       setState(() {
         _downloadingKey = null;
-        _downloadMsg = 'Tersimpan di: $path';
+        _downloadMsg = 'Tersimpan di folder download';
       });
+      _openFile(path);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -160,6 +164,19 @@ class _ResultScreenState extends State<ResultScreen>
         _downloadMsg = 'Gagal download: $e';
       });
     }
+  }
+
+  /// Buka file yang baru di-download via default app.
+  void _openFile(String path) {
+    OpenFile.open(path).then((result) {
+      if (!mounted) return;
+      if (result.type != ResultType.done) {
+        // Gagal buka file — kasih info aja
+        setState(() {
+          _downloadMsg = 'Tersimpan. Buka manual di folder download.';
+        });
+      }
+    });
   }
 
   @override
