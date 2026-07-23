@@ -103,6 +103,7 @@ jobs:
         with:
           tag: ${{ steps.version.outputs.tag }}
           name: "Release ${{ steps.version.outputs.tag }}"
+          draft: true
           generateReleaseNotes: true
           skipIfReleaseExists: true
           artifactErrorsFailBuild: false
