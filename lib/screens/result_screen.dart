@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import 'package:open_file_plus/open_file_plus.dart';
+import 'package:open_filex/open_filex.dart';
 import '../config/theme.dart';
 import '../services/download_service.dart';
 import '../services/file_service.dart';
@@ -168,7 +168,7 @@ class _ResultScreenState extends State<ResultScreen>
 
   /// Buka file yang baru di-download via default app.
   void _openFile(String path) {
-    OpenFile.open(path).then((result) {
+    OpenFilex.open(path).then((result) {
       if (!mounted) return;
       if (result.type != ResultType.done) {
         // Gagal buka file — kasih info aja
