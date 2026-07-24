@@ -41,7 +41,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   url_launcher: ^6.3.0
   upgrader: ^13.6.0
-  open_file_plus: ^3.4.1
+  open_filex: ^4.7.0
   file_picker: ^8.1.7
   shared_preferences: ^2.3.5
 

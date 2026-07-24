@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import 'package:open_file_plus/open_file_plus.dart';
+import 'package:open_filex/open_filex.dart';
 import '../config/theme.dart';
 import '../services/download_service.dart';
 import '../services/file_service.dart';
 import '../services/download_location_service.dart';
+
+// ignore_for_file: deprecated_member_use
 import '../widgets/index.dart';
 
 /// Grup media per tipe (video/audio/image) biar user bisa pilih kualitas dulu.
@@ -14,14 +16,13 @@ class _TypeGroup {
   final IconData icon;
   final String label;
   final List<MediaItem> items;
-  int selectedIndex;
+  int selectedIndex = 0;
 
   _TypeGroup({
     required this.type,
     required this.icon,
     required this.label,
     required this.items,
-    this.selectedIndex = 0,
   });
 }
 
@@ -168,7 +169,7 @@ class _ResultScreenState extends State<ResultScreen>
 
   /// Buka file yang baru di-download via default app.
   void _openFile(String path) {
-    OpenFile.open(path).then((result) {
+    OpenFilex.open(path).then((result) {
       if (!mounted) return;
       if (result.type != ResultType.done) {
         // Gagal buka file — kasih info aja
@@ -452,7 +453,7 @@ class _ResultScreenState extends State<ResultScreen>
                 label: Text(isDownloading ? 'Mengunduh...' : 'Unduh ${group.label} Ini'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: group.type == 'audio'
-                      ? AppTheme.accent?.withValues(alpha: 0.8)
+                      ? AppTheme.accent.withValues(alpha: 0.8)
                       : AppTheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
