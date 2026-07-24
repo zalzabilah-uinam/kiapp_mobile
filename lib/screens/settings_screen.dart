@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
 import '../services/download_location_service.dart';
+import '../services/permission_service.dart';
 import '../widgets/index.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -44,6 +45,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickFolder() async {
+    // Minta izin penyimpanan dulu sebelum pilih folder
+    final granted = await showPermissionDialog(context);
+    if (!granted || !mounted) return;
+
     final result = await FilePicker.platform.getDirectoryPath(
       dialogTitle: 'Pilih folder download',
     );
