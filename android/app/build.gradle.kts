@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.sosmeddownloader.sosmed_downloader"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
