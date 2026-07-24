@@ -15,16 +15,25 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
+// Paksa compileSdk 36 — afterEvaluate biar override file_picker dkk
 subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// Paksa compileSdk 36 untuk semua subproyek (plugin termasuk)
 subprojects {
-    afterEvaluate {
-        if (extensions.findByName("android") != null) {
-            extensions.configure<com.android.build.gradle.BaseExtension> {
-                compileSdkVersion(36)
+    val proj = this
+    if (proj.name != "app") {
+        afterEvaluate {
+            plugins.withId("com.android.application") {
+                extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
+                    compileSdk = 36
+                }
+            }
+            plugins.withId("com.android.library") {
+                extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+                    compileSdk = 36
+                }
             }
         }
     }
