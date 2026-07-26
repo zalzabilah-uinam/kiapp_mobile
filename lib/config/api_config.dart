@@ -12,6 +12,9 @@ class ApiConfig {
   static const String history = '$baseUrl/api/history';
   static const String leaderboard = '$baseUrl/api/leaderboard';
 
+  // Chat global
+  static const String chatMessages = '$baseUrl/api/chat/messages';
+
   // Storage (R2) endpoints
   static const String storageStatus = '$baseUrl/api/storage/status';
   static const String storageAvatar = '$baseUrl/api/storage/avatar';

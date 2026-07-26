@@ -52,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen>
     if (u.contains('capcut.com')) return 'CapCut';
     if (u.contains('threads.net')) return 'Threads';
     if (u.contains('pinterest.com')) return 'Pinterest';
-    if (u.contains('reddit.com')) return 'Reddit';
     return null;
   }
 
@@ -313,7 +312,6 @@ class _HomeScreenState extends State<HomeScreen>
                     PlatformChip('CapCut', Icons.content_cut),
                     PlatformChip('Threads', Icons.chat),
                     PlatformChip('Pinterest', Icons.push_pin),
-                    PlatformChip('Reddit', Icons.reddit),
                   ],
                 ),
                 const SizedBox(height: 36),
