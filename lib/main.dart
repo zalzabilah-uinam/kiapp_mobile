@@ -12,6 +12,7 @@ import 'services/app_update_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
+import 'screens/leaderboard_screen.dart';
 import 'screens/settings_screen.dart';
 
 void main() {
@@ -130,6 +131,7 @@ class MainShellState extends State<MainShell> {
   final _pages = const [
     HomeScreen(),
     HistoryScreen(),
+    LeaderboardScreen(),
     SettingsScreen(),
   ];
 
@@ -149,7 +151,10 @@ class MainShellState extends State<MainShell> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.history_rounded), label: 'History'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: 'Settings'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.emoji_events_rounded), label: 'Top'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.settings_rounded), label: 'Settings'),
         ],
       ),
     );

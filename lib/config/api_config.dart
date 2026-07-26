@@ -10,6 +10,7 @@ class ApiConfig {
   static const String download = '$baseUrl/api/download';
   static const String platforms = '$baseUrl/api/download/platforms';
   static const String history = '$baseUrl/api/history';
+  static const String leaderboard = '$baseUrl/api/leaderboard';
 
   // Storage (R2) endpoints
   static const String storageStatus = '$baseUrl/api/storage/status';
