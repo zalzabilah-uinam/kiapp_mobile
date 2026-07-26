@@ -147,6 +147,22 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Refresh profile dari server (sync avatar & fullName).
+  Future<void> refreshProfile() async {
+    try {
+      final profile = await _authService.getProfile();
+      final user = profile['user'] as Map<String, dynamic>?;
+      if (user != null) {
+        _fullName = user['fullName'] as String? ?? _fullName;
+        _avatarUrl = user['avatarUrl'] as String? ?? _avatarUrl;
+        await _persistProfile();
+        notifyListeners();
+      }
+    } catch (_) {
+      // diamkan — best effort
+    }
+  }
+
   /// Ubah password akun. Return true jika sukses.
   Future<bool> changePassword({
     required String currentPassword,
@@ -206,22 +222,6 @@ class AuthProvider extends ChangeNotifier {
       _error = 'Gagal hapus avatar';
       notifyListeners();
       return false;
-    }
-  }
-
-  /// Refresh profile dari server (sync avatar & fullName).
-  Future<void> refreshProfile() async {
-    try {
-      final profile = await _authService.getProfile();
-      final user = profile['user'] as Map<String, dynamic>?;
-      if (user != null) {
-        _fullName = user['fullName'] as String? ?? _fullName;
-        _avatarUrl = user['avatarUrl'] as String? ?? _avatarUrl;
-        await _persistProfile();
-        notifyListeners();
-      }
-    } catch (_) {
-      // diamkan — best effort
     }
   }
 

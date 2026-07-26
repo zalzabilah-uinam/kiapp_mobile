@@ -28,6 +28,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadVersion();
     _loadDownloadPath();
+    // Refresh profile dari server biar avatar & fullName pasti fresh
+    // (gak hanya dari secure storage lokal).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AuthProvider>().refreshProfile();
+      }
+    });
   }
 
   Future<void> _loadVersion() async {
@@ -452,48 +459,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     GestureDetector(
                       onTap: _changeAvatar,
-                      child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          gradient: auth.avatarUrl == null
-                              ? AppTheme.primaryGradient
-                              : null,
-                          color: auth.avatarUrl != null
-                              ? const Color(0xFF2A2A3E)
-                              : null,
-                          borderRadius: BorderRadius.circular(18),
-                          image: auth.avatarUrl != null
-                              ? DecorationImage(
-                                  // Cache buster: timestamp di query string
-                                  // supaya Flutter gak pakai cache lama setelah upload baru.
-                                  image: NetworkImage(
-                                    auth.avatarUrl!.contains('?')
-                                        ? '${auth.avatarUrl!}&t=${DateTime.now().millisecondsSinceEpoch}'
-                                        : '${auth.avatarUrl!}?t=${DateTime.now().millisecondsSinceEpoch}',
-                                  ),
-                                  fit: BoxFit.cover,
-                                  onError: (e, s) {
-                                    // ignore: avoid_print
-                                    debugPrint('Avatar load failed: $e');
-                                  },
-                                )
-                              : null,
-                        ),
-                        child: auth.avatarUrl == null
-                            ? const Icon(Icons.person,
-                                size: 32, color: Colors.white)
-                            : const Align(
-                                alignment: Alignment.bottomRight,
-                                child: Padding(
-                                  padding: EdgeInsets.all(2),
-                                  child: Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
+                      child: _ProfileAvatar(
+                        url: auth.avatarUrl,
+                        size: 64,
+                        onTap: _changeAvatar,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -798,6 +767,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Avatar user di profile card.
+/// Pakai URL stabil + ImageCache.evict manual supaya cache-buster
+/// cuma terjadi saat avatar benar-benar berubah, bukan tiap rebuild.
+class _ProfileAvatar extends StatefulWidget {
+  final String? url;
+  final double size;
+  final VoidCallback? onTap;
+  const _ProfileAvatar({this.url, this.size = 64, this.onTap});
+
+  @override
+  State<_ProfileAvatar> createState() => _ProfileAvatarState();
+}
+
+class _ProfileAvatarState extends State<_ProfileAvatar> {
+  @override
+  void didUpdateWidget(covariant _ProfileAvatar old) {
+    super.didUpdateWidget(old);
+    if (old.url != widget.url) {
+      // Evict URL lama dari cache supaya gambar baru pasti ter-load.
+      if (old.url != null && old.url!.isNotEmpty) {
+        final oldProvider = NetworkImage(old.url!);
+        oldProvider.evict().catchError((_) => false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasUrl = widget.url != null && widget.url!.isNotEmpty;
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        width: widget.size,
+        height: widget.size,
+        decoration: BoxDecoration(
+          gradient: hasUrl ? null : AppTheme.primaryGradient,
+          color: hasUrl ? const Color(0xFF2A2A3E) : null,
+          borderRadius: BorderRadius.circular(18),
+          image: hasUrl
+              ? DecorationImage(
+                  image: NetworkImage(widget.url!),
+                  fit: BoxFit.cover,
+                  onError: (_, _) {
+                    // ignore: avoid_print
+                    debugPrint('Avatar load failed: ${widget.url}');
+                  },
+                )
+              : null,
+        ),
+        child: hasUrl
+            ? Align(
+                alignment: Alignment.bottomRight,
+                child: Container(
+                  margin: const EdgeInsets.all(2),
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 12,
+                  ),
+                ),
+              )
+            : const Icon(Icons.person, size: 32, color: Colors.white),
       ),
     );
   }
