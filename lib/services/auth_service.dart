@@ -5,19 +5,25 @@ class AuthResult {
   final String userId;
   final String email;
   final String apiKey;
+  final String? fullName;
+  final String? avatarUrl;
 
   AuthResult({
     required this.userId,
     required this.email,
     required this.apiKey,
+    this.fullName,
+    this.avatarUrl,
   });
 
   factory AuthResult.fromJson(Map<String, dynamic> json) {
-    final user = json['user'] as Map<String, dynamic>;
+    final user = json['user'] as Map<String, dynamic>? ?? const {};
     return AuthResult(
-      userId: user['id'] as String,
-      email: user['email'] as String,
-      apiKey: json['apiKey'] as String,
+      userId: (user['id'] ?? '').toString(),
+      email: (user['email'] ?? '').toString(),
+      apiKey: (json['apiKey'] ?? '').toString(),
+      fullName: user['fullName'] as String?,
+      avatarUrl: user['avatarUrl'] as String?,
     );
   }
 }
@@ -58,5 +64,16 @@ class AuthService {
   Future<String> refreshKey() async {
     final resp = await _client.post(ApiConfig.refreshKey);
     return resp['data']['apiKey'] as String;
+  }
+
+  Future<String> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final resp = await _client.post(ApiConfig.changePassword, body: {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    });
+    return resp['message'] as String? ?? 'Password berhasil diperbarui';
   }
 }

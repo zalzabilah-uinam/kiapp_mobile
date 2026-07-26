@@ -6,6 +6,7 @@ import 'providers/download_provider.dart';
 import 'providers/history_provider.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
+import 'services/storage_service.dart';
 import 'services/notification_service.dart';
 import 'services/app_update_service.dart';
 import 'screens/login_screen.dart';
@@ -39,10 +40,12 @@ class SosmedDownloaderApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final apiClient = ApiClient();
     final authService = AuthService(apiClient);
+    final storageService = StorageService(apiClient);
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(apiClient, authService)),
+        ChangeNotifierProvider(
+            create: (_) => AuthProvider(apiClient, authService, storageService)),
         ChangeNotifierProvider(create: (_) => DownloadProvider(apiClient)),
         ChangeNotifierProxyProvider<DownloadProvider, HistoryProvider>(
           create: (_) => HistoryProvider(apiClient),

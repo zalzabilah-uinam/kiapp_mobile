@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../config/api_config.dart';
 
 class ApiException implements Exception {
@@ -40,6 +41,40 @@ class ApiClient {
   Future<Map<String, dynamic>> delete(String url) async {
     final uri = Uri.parse(url);
     final resp = await _client.delete(uri, headers: _headers).timeout(ApiConfig.timeout);
+    return _handle(resp);
+  }
+
+  /// Multipart upload — untuk avatar & media.
+  /// [fields] → field teks tambahan (mis. remoteUrl, prefix).
+  Future<Map<String, dynamic>> postMultipart(
+    String url, {
+    required String fileField,
+    required List<int> fileBytes,
+    required String filename,
+    String? contentType,
+    Map<String, String>? fields,
+  }) async {
+    final uri = Uri.parse(url);
+    final req = http.MultipartRequest('POST', uri);
+    // API key di header
+    if (_apiKey != null) req.headers['X-API-Key'] = _apiKey!;
+    // Field teks
+    if (fields != null) {
+      req.fields.addAll(fields);
+    }
+    // File
+    req.files.add(http.MultipartFile.fromBytes(
+      fileField,
+      fileBytes,
+      filename: filename,
+      contentType: contentType != null
+          ? (contentType.startsWith('image/') || contentType.startsWith('video/') || contentType.startsWith('audio/')
+              ? MediaType.parse(contentType)
+              : null)
+          : null,
+    ));
+    final streamed = await req.send().timeout(const Duration(minutes: 2));
+    final resp = await http.Response.fromStream(streamed);
     return _handle(resp);
   }
 
