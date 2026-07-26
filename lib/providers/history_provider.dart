@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import '../services/history_service.dart';
+import 'download_provider.dart';
 
 class HistoryProvider extends ChangeNotifier {
   final ApiClient _apiClient;
@@ -16,6 +17,12 @@ class HistoryProvider extends ChangeNotifier {
 
   HistoryProvider(this._apiClient) {
     _historyService = HistoryService(_apiClient);
+  }
+
+  /// Auto-refresh setiap ada download sukses.
+  /// Pasang listener di constructor atau dari parent.
+  void bindAutoRefresh(DownloadProvider downloadProvider) {
+    downloadProvider.addOnSuccessListener(() => load());
   }
 
   Future<void> load() async {

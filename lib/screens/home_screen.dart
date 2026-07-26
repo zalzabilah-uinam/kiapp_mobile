@@ -60,12 +60,15 @@ class _HomeScreenState extends State<HomeScreen>
     if (!_formKey.currentState!.validate()) return;
     final url = _urlCtrl.text.trim();
     final dp = context.read<DownloadProvider>();
+    final hp = context.read<HistoryProvider>();
 
     final ok = await dp.download(url);
     if (!mounted) return;
 
     if (ok && dp.result != null) {
       _urlCtrl.clear();
+      // Refresh history setelah download sukses
+      hp.load();
       _showResult(dp.result!);
     } else if (dp.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -412,6 +415,7 @@ class _HistoryCarouselCard extends StatelessWidget {
     if (p == 'twitter') return Icons.alternate_email;
     if (p == 'youtube') return Icons.play_circle;
     if (p == 'capcut') return Icons.content_cut;
+    if (p == 'threads') return Icons.chat_bubble_outline;
     return Icons.link;
   }
 

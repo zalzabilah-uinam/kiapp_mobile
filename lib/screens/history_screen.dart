@@ -143,6 +143,7 @@ class _HistoryCard extends StatelessWidget {
     if (p == 'twitter') return Icons.alternate_email;
     if (p == 'youtube') return Icons.play_circle;
     if (p == 'capcut') return Icons.content_cut;
+    if (p == 'threads') return Icons.chat_bubble_outline;
     return Icons.link;
   }
 

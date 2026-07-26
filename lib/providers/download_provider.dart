@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import '../services/download_service.dart';
@@ -51,6 +50,18 @@ class DownloadProvider extends ChangeNotifier {
   int? get remainingQuota => _remainingQuota;
   List<DownloadLog> get logs => List.unmodifiable(_logs);
 
+  // Listener yang dipanggil setiap kali download sukses.
+  // Dipakai HistoryProvider untuk auto-refresh list.
+  final List<VoidCallback> _onSuccessListeners = [];
+
+  void addOnSuccessListener(VoidCallback listener) {
+    _onSuccessListeners.add(listener);
+  }
+
+  void removeOnSuccessListener(VoidCallback listener) {
+    _onSuccessListeners.remove(listener);
+  }
+
   DownloadProvider(this._apiClient) {
     _downloadService = DownloadService(_apiClient);
   }
@@ -80,6 +91,11 @@ class DownloadProvider extends ChangeNotifier {
       _result = await _downloadService.download(url, saveToHistory: saveToHistory);
       _remainingQuota = _result?.downloadsRemaining;
       _status = DownloadStatus.success;
+
+      // Trigger history refresh listeners
+      for (final cb in List<VoidCallback>.from(_onSuccessListeners)) {
+        cb();
+      }
 
       // Notif lokal
       final platform = _detectPlatform(url);
@@ -157,6 +173,7 @@ class DownloadProvider extends ChangeNotifier {
     if (u.contains('twitter.com') || u.contains('x.com')) return 'Twitter';
     if (u.contains('youtube.com') || u.contains('youtu.be')) return 'YouTube';
     if (u.contains('capcut.com')) return 'CapCut';
+    if (u.contains('threads.net') || u.contains('threads.com')) return 'Threads';
     return null;
   }
 }

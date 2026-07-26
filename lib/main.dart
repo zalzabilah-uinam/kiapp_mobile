@@ -44,7 +44,14 @@ class SosmedDownloaderApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider(apiClient, authService)),
         ChangeNotifierProvider(create: (_) => DownloadProvider(apiClient)),
-        ChangeNotifierProvider(create: (_) => HistoryProvider(apiClient)),
+        ChangeNotifierProxyProvider<DownloadProvider, HistoryProvider>(
+          create: (_) => HistoryProvider(apiClient),
+          update: (_, dp, prev) {
+            final hp = prev ?? HistoryProvider(apiClient);
+            hp.bindAutoRefresh(dp);
+            return hp;
+          },
+        ),
       ],
       child: MaterialApp(
         title: 'Sosmed Downloader',
