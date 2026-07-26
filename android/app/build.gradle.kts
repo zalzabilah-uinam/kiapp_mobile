@@ -26,15 +26,47 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            // Resolve keystore dari salah satu sumber, urutan prioritas:
+            //  1. Gradle property KEYSTORE_FILE  (dari -PKEYSTORE_FILE=… via workflow)
+            //  2. android/key.properties         (lokal, di-.gitignore)
+            //  3. <rootDir>/keystore.jks        (di-copy workflow ke repo root)
+            val propsFile = rootProject.file("key.properties")
+            val localCfg = if (propsFile.exists()) {
+                java.util.Properties().apply { propsFile.inputStream().use { load(it) } }
+            } else null
+
+            val ksFile = (project.findProperty("KEYSTORE_FILE") as String?)
+                ?: localCfg?.getProperty("storeFile")
+                ?: "$rootDir/keystore.jks"
+
+            if (file(ksFile).exists()) {
+                storeFile = file(ksFile)
+                storePassword = (project.findProperty("KEYSTORE_PASSWORD") as String?)
+                    ?: localCfg?.getProperty("storePassword")
+                    ?: ""
+                keyAlias = (project.findProperty("KEY_ALIAS") as String?)
+                    ?: localCfg?.getProperty("keyAlias")
+                    ?: ""
+                keyPassword = (project.findProperty("KEY_PASSWORD") as String?)
+                    ?: localCfg?.getProperty("keyPassword")
+                    ?: ""
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = if (project.hasProperty("KEYSTORE_FILE")) {
-                signingConfigs.create("release") {
-                    storeFile = file(project.property("KEYSTORE_FILE") as String)
-                    storePassword = project.property("KEYSTORE_PASSWORD") as String
-                    keyAlias = project.property("KEY_ALIAS") as String
-                    keyPassword = project.property("KEY_PASSWORD") as String
-                }
+            val propsFile = rootProject.file("key.properties")
+            val localCfg = if (propsFile.exists()) {
+                java.util.Properties().apply { propsFile.inputStream().use { load(it) } }
+            } else null
+            val ksFile = (project.findProperty("KEYSTORE_FILE") as String?)
+                ?: localCfg?.getProperty("storeFile")
+                ?: "$rootDir/keystore.jks"
+            signingConfig = if (file(ksFile).exists()) {
+                signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
             }
