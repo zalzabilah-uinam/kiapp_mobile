@@ -1,8 +1,49 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Resolve keystore config dari salah satu sumber, urutan prioritas:
+//   1. Gradle property KEYSTORE_FILE/KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD
+//      (di-pass via -PKEYSTORE_FILE=… dari GitHub Actions workflow)
+//   2. android/key.properties (lokal, di-.gitignore)
+//   3. <rootDir>/keystore.jks  (default fallback kalau workflow copy keystore ke repo root)
+fun resolveKeyCfg(project: org.gradle.api.Project): KeyCfg {
+    val propsFile = project.rootProject.file("key.properties")
+    val localCfg: Properties? = if (propsFile.exists()) {
+        Properties().apply { propsFile.inputStream().use { stream -> load(stream) } }
+    } else null
+
+    fun p(key: String): String? = project.findProperty(key) as String?
+
+    val ksFile = p("KEYSTORE_FILE")
+        ?: localCfg?.getProperty("storeFile")
+        ?: "${project.rootDir}/keystore.jks"
+
+    val exists = project.file(ksFile).exists()
+    return KeyCfg(
+        storeFilePath = if (exists) ksFile else null,
+        storePassword = p("KEYSTORE_PASSWORD")
+            ?: localCfg?.getProperty("storePassword")
+            ?: "",
+        keyAlias = p("KEY_ALIAS")
+            ?: localCfg?.getProperty("keyAlias")
+            ?: "",
+        keyPassword = p("KEY_PASSWORD")
+            ?: localCfg?.getProperty("keyPassword")
+            ?: "",
+    )
+}
+
+data class KeyCfg(
+    val storeFilePath: String?,
+    val storePassword: String,
+    val keyAlias: String,
+    val keyPassword: String,
+)
 
 android {
     namespace = "com.sosmeddownloader.sosmed_downloader"
@@ -16,10 +57,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.sosmeddownloader.sosmed_downloader"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -28,44 +66,20 @@ android {
 
     signingConfigs {
         create("release") {
-            // Resolve keystore dari salah satu sumber, urutan prioritas:
-            //  1. Gradle property KEYSTORE_FILE  (dari -PKEYSTORE_FILE=… via workflow)
-            //  2. android/key.properties         (lokal, di-.gitignore)
-            //  3. <rootDir>/keystore.jks        (di-copy workflow ke repo root)
-            val propsFile = rootProject.file("key.properties")
-            val localCfg = if (propsFile.exists()) {
-                java.util.Properties().apply { propsFile.inputStream().use { load(it) } }
-            } else null
-
-            val ksFile = (project.findProperty("KEYSTORE_FILE") as String?)
-                ?: localCfg?.getProperty("storeFile")
-                ?: "$rootDir/keystore.jks"
-
-            if (file(ksFile).exists()) {
-                storeFile = file(ksFile)
-                storePassword = (project.findProperty("KEYSTORE_PASSWORD") as String?)
-                    ?: localCfg?.getProperty("storePassword")
-                    ?: ""
-                keyAlias = (project.findProperty("KEY_ALIAS") as String?)
-                    ?: localCfg?.getProperty("keyAlias")
-                    ?: ""
-                keyPassword = (project.findProperty("KEY_PASSWORD") as String?)
-                    ?: localCfg?.getProperty("keyPassword")
-                    ?: ""
+            val cfg = resolveKeyCfg(project)
+            if (cfg.storeFilePath != null) {
+                storeFile = file(cfg.storeFilePath)
+                storePassword = cfg.storePassword
+                keyAlias = cfg.keyAlias
+                keyPassword = cfg.keyPassword
             }
         }
     }
 
     buildTypes {
         release {
-            val propsFile = rootProject.file("key.properties")
-            val localCfg = if (propsFile.exists()) {
-                java.util.Properties().apply { propsFile.inputStream().use { load(it) } }
-            } else null
-            val ksFile = (project.findProperty("KEYSTORE_FILE") as String?)
-                ?: localCfg?.getProperty("storeFile")
-                ?: "$rootDir/keystore.jks"
-            signingConfig = if (file(ksFile).exists()) {
+            val cfg = resolveKeyCfg(project)
+            signingConfig = if (cfg.storeFilePath != null) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
