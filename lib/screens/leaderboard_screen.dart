@@ -22,7 +22,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   void initState() {
     super.initState();
-    _service = LeaderboardService(context.read<ApiClient>());
+    _service = context.read<LeaderboardService>();
     _load();
   }
 

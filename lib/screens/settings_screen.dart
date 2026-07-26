@@ -465,9 +465,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           borderRadius: BorderRadius.circular(18),
                           image: auth.avatarUrl != null
                               ? DecorationImage(
-                                  image: NetworkImage(auth.avatarUrl!),
+                                  // Cache buster: timestamp di query string
+                                  // supaya Flutter gak pakai cache lama setelah upload baru.
+                                  image: NetworkImage(
+                                    auth.avatarUrl!.contains('?')
+                                        ? '${auth.avatarUrl!}&t=${DateTime.now().millisecondsSinceEpoch}'
+                                        : '${auth.avatarUrl!}?t=${DateTime.now().millisecondsSinceEpoch}',
+                                  ),
                                   fit: BoxFit.cover,
-                                  onError: (_, __) {},
+                                  onError: (e, s) {
+                                    // ignore: avoid_print
+                                    debugPrint('Avatar load failed: $e');
+                                  },
                                 )
                               : null,
                         ),

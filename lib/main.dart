@@ -9,6 +9,7 @@ import 'services/auth_service.dart';
 import 'services/storage_service.dart';
 import 'services/notification_service.dart';
 import 'services/app_update_service.dart';
+import 'services/leaderboard_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
@@ -42,9 +43,15 @@ class SosmedDownloaderApp extends StatelessWidget {
     final apiClient = ApiClient();
     final authService = AuthService(apiClient);
     final storageService = StorageService(apiClient);
+    final leaderboardService = LeaderboardService(apiClient);
 
     return MultiProvider(
       providers: [
+        // Share ApiClient & services via Provider (bukan ChangeNotifier)
+        // agar bisa di-inject pakai `context.read` dari mana saja.
+        Provider<ApiClient>.value(value: apiClient),
+        Provider<StorageService>.value(value: storageService),
+        Provider<LeaderboardService>.value(value: leaderboardService),
         ChangeNotifierProvider(
             create: (_) => AuthProvider(apiClient, authService, storageService)),
         ChangeNotifierProvider(create: (_) => DownloadProvider(apiClient)),
