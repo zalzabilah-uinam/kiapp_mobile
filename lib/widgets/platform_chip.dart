@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import '../config/theme.dart';
 
 /// Consistent platform chip used across the app.
+/// Tap handler opsional — kalau null, chip tetap decorative.
 class PlatformChip extends StatelessWidget {
   final String label;
   final IconData icon;
+  final VoidCallback? onTap;
 
-  const PlatformChip(this.label, this.icon, {super.key});
+  const PlatformChip(this.label, this.icon, {super.key, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final decorative = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: AppTheme.glassWhite,
@@ -25,6 +27,14 @@ class PlatformChip extends StatelessWidget {
           Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
         ],
       ),
+    );
+
+    if (onTap == null) return decorative;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: decorative,
     );
   }
 }

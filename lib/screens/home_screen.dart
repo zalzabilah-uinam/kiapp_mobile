@@ -6,6 +6,7 @@ import '../providers/download_provider.dart';
 import '../providers/history_provider.dart';
 import '../services/download_service.dart';
 import '../widgets/index.dart';
+import 'platform_download_screen.dart';
 import 'result_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -117,6 +118,26 @@ class _HomeScreenState extends State<HomeScreen>
               child: FadeTransition(opacity: a1, child: child),
         ),
         transitionDuration: const Duration(milliseconds: 350),
+      ),
+    );
+  }
+
+  /// Buka platform-specific download screen.
+  void _openPlatformDownload({
+    required String platform,
+    required String label,
+    required IconData icon,
+    required List<Color> gradient,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlatformDownloadScreen(
+          platform: platform,
+          label: label,
+          icon: icon,
+          gradient: gradient,
+        ),
       ),
     );
   }
@@ -303,15 +324,87 @@ class _HomeScreenState extends State<HomeScreen>
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
-                  children: const [
-                    PlatformChip('TikTok', Icons.music_note),
-                    PlatformChip('Instagram', Icons.camera_alt),
-                    PlatformChip('Facebook', Icons.facebook),
-                    PlatformChip('Twitter', Icons.alternate_email),
-                    PlatformChip('YouTube', Icons.play_circle),
-                    PlatformChip('CapCut', Icons.content_cut),
-                    PlatformChip('Threads', Icons.chat),
-                    PlatformChip('Pinterest', Icons.push_pin),
+                  children: [
+                    PlatformChip(
+                      'TikTok',
+                      Icons.music_note,
+                      onTap: () => _openPlatformDownload(
+                        platform: 'tiktok',
+                        label: 'TikTok',
+                        icon: Icons.music_note,
+                        gradient: const [Color(0xFF6C2BD9), Color(0xFFFF0050)],
+                      ),
+                    ),
+                    PlatformChip(
+                      'Instagram',
+                      Icons.camera_alt,
+                      onTap: () => _openPlatformDownload(
+                        platform: 'instagram',
+                        label: 'Instagram',
+                        icon: Icons.camera_alt,
+                        gradient: const [Color(0xFF833AB4), Color(0xFFE1306C)],
+                      ),
+                    ),
+                    PlatformChip(
+                      'Facebook',
+                      Icons.facebook,
+                      onTap: () => _openPlatformDownload(
+                        platform: 'facebook',
+                        label: 'Facebook',
+                        icon: Icons.facebook,
+                        gradient: const [Color(0xFF1877F2), Color(0xFF0A4FB5)],
+                      ),
+                    ),
+                    PlatformChip(
+                      'Twitter',
+                      Icons.alternate_email,
+                      onTap: () => _openPlatformDownload(
+                        platform: 'twitter',
+                        label: 'Twitter / X',
+                        icon: Icons.alternate_email,
+                        gradient: const [Color(0xFF1DA1F2), Color(0xFF14171A)],
+                      ),
+                    ),
+                    PlatformChip(
+                      'YouTube',
+                      Icons.play_circle,
+                      onTap: () => _openPlatformDownload(
+                        platform: 'youtube',
+                        label: 'YouTube',
+                        icon: Icons.play_circle,
+                        gradient: const [Color(0xFFFF0000), Color(0xFF8B0000)],
+                      ),
+                    ),
+                    PlatformChip(
+                      'CapCut',
+                      Icons.content_cut,
+                      onTap: () => _openPlatformDownload(
+                        platform: 'capcut',
+                        label: 'CapCut',
+                        icon: Icons.content_cut,
+                        gradient: const [Color(0xFF00C2FF), Color(0xFF0026FF)],
+                      ),
+                    ),
+                    PlatformChip(
+                      'Threads',
+                      Icons.chat,
+                      onTap: () => _openPlatformDownload(
+                        platform: 'threads',
+                        label: 'Threads',
+                        icon: Icons.chat,
+                        gradient: const [Color(0xFF000000), Color(0xFF555555)],
+                      ),
+                    ),
+                    PlatformChip(
+                      'Pinterest',
+                      Icons.push_pin,
+                      onTap: () => _openPlatformDownload(
+                        platform: 'pinterest',
+                        label: 'Pinterest',
+                        icon: Icons.push_pin,
+                        gradient: const [Color(0xFFE60023), Color(0xFF8B0000)],
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 36),
