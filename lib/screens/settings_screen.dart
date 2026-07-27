@@ -9,6 +9,8 @@ import '../providers/auth_provider.dart';
 import '../services/download_location_service.dart';
 import '../services/permission_service.dart';
 import '../widgets/index.dart';
+import 'top_up_screen.dart';
+import 'payment_history_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -486,6 +488,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // ── Kuota Section ──
+              Text('Kuota', style: Theme.of(context).textTheme.titleLarge),
+              GlassCard(
+                dark: true,
+                radius: 16,
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.accentGradient,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.bolt_rounded,
+                              color: Colors.white, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Sisa Kuota',
+                                style: TextStyle(
+                                  color: AppTheme.primaryLight,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${auth.downloadsRemaining} unduhan tersisa',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () async {
+                              final auth = context.read<AuthProvider>();
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const TopUpScreen(),
+                                ),
+                              );
+                              if (!mounted) return;
+                              auth.refreshProfile();
+                            },
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: const Text('Top Up'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              backgroundColor: AppTheme.accent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const PaymentHistoryScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.receipt_long_outlined,
+                                size: 18),
+                            label: const Text('Riwayat'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryLight,
+                              side: BorderSide(
+                                color: AppTheme.primaryLight
+                                    .withValues(alpha: 0.4),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'config/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/download_provider.dart';
@@ -11,15 +12,16 @@ import 'services/notification_service.dart';
 import 'services/app_update_service.dart';
 import 'services/leaderboard_service.dart';
 import 'services/chat_service.dart';
+import 'services/payment_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/history_screen.dart';
-import 'screens/leaderboard_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/settings_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Init locale ID untuk DateFormat('id_ID').
+  await initializeDateFormatting('id_ID');
   NotificationService().init();
   runApp(const SosmedDownloaderApp());
 }
@@ -47,6 +49,7 @@ class SosmedDownloaderApp extends StatelessWidget {
     final storageService = StorageService(apiClient);
     final leaderboardService = LeaderboardService(apiClient);
     final chatService = ChatService(apiClient);
+    final paymentService = PaymentService(apiClient);
 
     return MultiProvider(
       providers: [
@@ -56,6 +59,7 @@ class SosmedDownloaderApp extends StatelessWidget {
         Provider<StorageService>.value(value: storageService),
         Provider<LeaderboardService>.value(value: leaderboardService),
         Provider<ChatService>.value(value: chatService),
+        Provider<PaymentService>.value(value: paymentService),
         ChangeNotifierProvider(
             create: (_) => AuthProvider(apiClient, authService, storageService)),
         ChangeNotifierProvider(create: (_) => DownloadProvider(apiClient)),

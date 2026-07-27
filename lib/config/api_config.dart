@@ -20,5 +20,12 @@ class ApiConfig {
   static const String storageAvatar = '$baseUrl/api/storage/avatar';
   static const String storageMedia = '$baseUrl/api/storage/media';
 
+  // Payment (Pakasir QRIS) endpoints
+  static const String paymentPackages = '$baseUrl/api/payment/packages';
+  static const String paymentCreate = '$baseUrl/api/payment/create';
+  static const String paymentHistory = '$baseUrl/api/payment/history';
+  static String paymentStatus(String orderId) =>
+      '$baseUrl/api/payment/status/$orderId';
+
   static const Duration timeout = Duration(seconds: 30);
 }

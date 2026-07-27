@@ -20,6 +20,7 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
   String? _fullName;
   String? _avatarUrl;
+  int _downloadsRemaining = 0;
 
   AuthStatus get status => _status;
   String? get userId => _userId;
@@ -28,6 +29,7 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
   String? get fullName => _fullName;
   String? get avatarUrl => _avatarUrl;
+  int get downloadsRemaining => _downloadsRemaining;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
 
   AuthProvider(this._apiClient, this._authService, this._storageService);
@@ -50,6 +52,7 @@ class AuthProvider extends ChangeNotifier {
         _email = user?['email'] as String? ?? savedEmail;
         _fullName = user?['fullName'] as String? ?? savedName;
         _avatarUrl = user?['avatarUrl'] as String? ?? savedAvatar;
+        _downloadsRemaining = (profile['downloadsRemaining'] as num?)?.toInt() ?? 0;
         await _persistProfile();
         _status = AuthStatus.authenticated;
       } on ApiException catch (e) {
@@ -147,7 +150,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Refresh profile dari server (sync avatar & fullName).
+  /// Refresh profile dari server (sync avatar, fullName, & sisa kuota).
   Future<void> refreshProfile() async {
     try {
       final profile = await _authService.getProfile();
@@ -155,6 +158,7 @@ class AuthProvider extends ChangeNotifier {
       if (user != null) {
         _fullName = user['fullName'] as String? ?? _fullName;
         _avatarUrl = user['avatarUrl'] as String? ?? _avatarUrl;
+        _downloadsRemaining = (profile['downloadsRemaining'] as num?)?.toInt() ?? _downloadsRemaining;
         await _persistProfile();
         notifyListeners();
       }
