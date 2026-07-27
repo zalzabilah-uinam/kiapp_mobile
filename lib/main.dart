@@ -15,6 +15,8 @@ import 'services/chat_service.dart';
 import 'services/payment_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/history_screen.dart';
+import 'screens/leaderboard_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/settings_screen.dart';
 
@@ -143,8 +145,11 @@ class MainShell extends StatefulWidget {
 class MainShellState extends State<MainShell> {
   int _pageIndex = 0;
 
+  // Order harus sama dengan BottomNavigationBar items.
   final _pages = const [
     HomeScreen(),
+    HistoryScreen(),
+    LeaderboardScreen(),
     ChatScreen(),
     SettingsScreen(),
   ];
