@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../config/theme.dart';
+import '../providers/auth_provider.dart';
+import '../providers/download_provider.dart';
 import '../services/api_client.dart';
 import '../services/payment_service.dart';
 
@@ -63,6 +65,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (fresh.status == 'completed') {
         _poll?.cancel();
         _tick?.cancel();
+        // Refresh quota di provider lain supaya UI langsung sync
+        // (home badge, settings, dsb).
+        // ignore: use_build_context_synchronously
+        final auth = context.read<AuthProvider>();
+        final dl = context.read<DownloadProvider>();
+        await auth.refreshProfile();
+        await dl.refreshQuota();
+        if (!mounted) return;
         await _celebrate();
       } else if (fresh.status == 'expired' && !_expiredHandled) {
         _expiredHandled = true;

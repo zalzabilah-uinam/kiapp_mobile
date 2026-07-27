@@ -77,6 +77,20 @@ class DownloadProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Re-fetch sisa kuota tanpa mengubah list platform.
+  /// Dipakai setelah top-up sukses supaya badge UI sync.
+  Future<void> refreshQuota() async {
+    try {
+      final (_, remaining) = await _downloadService.getPlatforms();
+      if (remaining != null) {
+        _remainingQuota = remaining;
+        notifyListeners();
+      }
+    } catch (_) {
+      // best-effort
+    }
+  }
+
   /// Download berjalan async — UI gak nunggu.
   /// Navigasi tetep bebas, pas selesai muncul notif.
   Future<bool> download(String url, {bool saveToHistory = true}) async {
