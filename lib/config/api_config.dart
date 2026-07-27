@@ -26,6 +26,8 @@ class ApiConfig {
   static const String paymentHistory = '$baseUrl/api/payment/history';
   static String paymentStatus(String orderId) =>
       '$baseUrl/api/payment/status/$orderId';
+  static String paymentReplay(String orderId) =>
+      '$baseUrl/api/payment/replay/$orderId';
 
   static const Duration timeout = Duration(seconds: 30);
 }

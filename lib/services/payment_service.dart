@@ -36,6 +36,7 @@ class PaymentTransaction {
   final CreditPackage? pkg;
   final String? paymentId;
   final String? status;
+  final bool isSandbox;
 
   PaymentTransaction({
     required this.orderId,
@@ -48,6 +49,7 @@ class PaymentTransaction {
     this.pkg,
     this.paymentId,
     this.status,
+    this.isSandbox = false,
   });
 
   factory PaymentTransaction.fromCreate(Map<String, dynamic> j) {
@@ -65,6 +67,7 @@ class PaymentTransaction {
       expiredAt: _parseDate(j['expiredAt']),
       pkg: pkg,
       paymentId: j['paymentId']?.toString(),
+      isSandbox: j['isSandbox'] == true,
     );
   }
 
@@ -172,5 +175,13 @@ class PaymentService {
     return data
         .map((e) => PaymentHistoryItem.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Retry kredit quota untuk transaksi yang sudah completed di DB tapi
+  /// quota belum naik (mis. webhook credit dulu gagal karena network).
+  Future<int> replay(String orderId) async {
+    final res = await _client.post(ApiConfig.paymentReplay(orderId));
+    final data = res['data'] as Map<String, dynamic>?;
+    return (data?['downloadsRemaining'] as num?)?.toInt() ?? 0;
   }
 }

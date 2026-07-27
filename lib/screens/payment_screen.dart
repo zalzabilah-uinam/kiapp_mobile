@@ -251,6 +251,28 @@ class _QrCard extends StatelessWidget {
       decoration: AppTheme.glassCard(radius: 22),
       child: Column(
         children: [
+          if (trx.isSandbox)
+            Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.error.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.error.withValues(alpha: 0.4)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber, color: AppTheme.error, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'MODE SANDBOX. QR dummy, e-wallet production akan tolak. Hubungi admin.',
+                      style: TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -266,11 +288,24 @@ class _QrCard extends StatelessWidget {
                           size: 96, color: Colors.black26),
                     ),
                   )
-                : QrImageView(
-                    data: trx.qrString!,
-                    size: 220,
-                    backgroundColor: Colors.white,
-                    errorCorrectionLevel: QrErrorCorrectLevel.M,
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      QrImageView(
+                        data: trx.qrString!,
+                        size: 220,
+                        backgroundColor: Colors.white,
+                        errorCorrectionLevel: QrErrorCorrectLevel.M,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Panjang: ${trx.qrString!.length} char',
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
                   ),
           ),
           const SizedBox(height: 14),
