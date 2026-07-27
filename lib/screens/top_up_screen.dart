@@ -164,17 +164,6 @@ class _PackageCard extends StatelessWidget {
                         fontSize: 13,
                       ),
                     ),
-                    if (pkg.description != null && pkg.description!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        pkg.description!,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.55),
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

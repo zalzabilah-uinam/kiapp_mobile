@@ -17,11 +17,11 @@ class CreditPackage {
   });
 
   factory CreditPackage.fromJson(Map<String, dynamic> j) => CreditPackage(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        credits: (j['credits'] as num).toInt(),
-        priceIdr: (j['priceIdr'] as num).toInt(),
-        sortOrder: (j['sortOrder'] as num?)?.toInt(),
+        id: j['id']?.toString() ?? '',
+        name: j['name']?.toString() ?? '',
+        credits: _asInt(j['credits']),
+        priceIdr: _asInt(j['priceIdr']),
+        sortOrder: _asIntOrNull(j['sortOrder']),
       );
 }
 
@@ -54,28 +54,30 @@ class PaymentTransaction {
     final pkg = j['package'] != null
         ? CreditPackage.fromJson(j['package'] as Map<String, dynamic>)
         : null;
+    final amount = _asInt(j['amount']);
     return PaymentTransaction(
-      orderId: j['orderId'] as String,
-      amount: (j['amount'] as num).toInt(),
-      fee: (j['fee'] as num?)?.toInt() ?? 0,
-      totalPayment: (j['totalPayment'] as num?)?.toInt() ?? (j['amount'] as num).toInt(),
-      paymentMethod: j['paymentMethod'] as String? ?? 'qris',
-      qrString: j['qrString'] as String?,
+      orderId: j['orderId']?.toString() ?? '',
+      amount: amount,
+      fee: _asInt(j['fee']),
+      totalPayment: _asIntOrNull(j['totalPayment']) ?? amount,
+      paymentMethod: j['paymentMethod']?.toString() ?? 'qris',
+      qrString: j['qrString']?.toString(),
       expiredAt: _parseDate(j['expiredAt']),
       pkg: pkg,
-      paymentId: j['paymentId'] as String?,
+      paymentId: j['paymentId']?.toString(),
     );
   }
 
   factory PaymentTransaction.fromStatus(Map<String, dynamic> j) {
+    final amount = _asInt(j['amountIdr']);
     return PaymentTransaction(
-      orderId: j['orderId'] as String,
-      amount: (j['amountIdr'] as num).toInt(),
+      orderId: j['orderId']?.toString() ?? '',
+      amount: amount,
       fee: 0,
-      totalPayment: (j['amountIdr'] as num).toInt(),
-      paymentMethod: j['paymentMethod'] as String? ?? 'qris',
+      totalPayment: amount,
+      paymentMethod: j['paymentMethod']?.toString() ?? 'qris',
       expiredAt: _parseDate(j['expiredAt']),
-      status: j['status'] as String?,
+      status: j['status']?.toString(),
     );
   }
 }
@@ -104,13 +106,13 @@ class PaymentHistoryItem {
   });
 
   factory PaymentHistoryItem.fromJson(Map<String, dynamic> j) => PaymentHistoryItem(
-        id: j['id'] as String,
-        orderId: j['orderId'] as String,
-        amountIdr: (j['amountIdr'] as num).toInt(),
-        credits: (j['credits'] as num).toInt(),
-        status: j['status'] as String,
-        paymentMethod: j['paymentMethod'] as String?,
-        packageName: j['packageName'] as String?,
+        id: j['id']?.toString() ?? '',
+        orderId: j['orderId']?.toString() ?? '',
+        amountIdr: _asInt(j['amountIdr']),
+        credits: _asInt(j['credits']),
+        status: j['status']?.toString() ?? 'unknown',
+        paymentMethod: j['paymentMethod']?.toString(),
+        packageName: j['packageName']?.toString(),
         paidAt: _parseDate(j['paidAt']),
         createdAt: _parseDate(j['createdAt']),
       );
@@ -121,6 +123,20 @@ DateTime? _parseDate(dynamic v) {
   if (v is String && v.isNotEmpty) {
     return DateTime.tryParse(v);
   }
+  return null;
+}
+
+int _asInt(dynamic v) {
+  if (v == null) return 0;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v) ?? 0;
+  return 0;
+}
+
+int? _asIntOrNull(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v);
   return null;
 }
 
