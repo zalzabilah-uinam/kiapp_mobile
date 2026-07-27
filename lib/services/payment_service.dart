@@ -6,7 +6,6 @@ class CreditPackage {
   final String name;
   final int credits;
   final int priceIdr;
-  final String? description;
   final int? sortOrder;
 
   CreditPackage({
@@ -14,7 +13,6 @@ class CreditPackage {
     required this.name,
     required this.credits,
     required this.priceIdr,
-    this.description,
     this.sortOrder,
   });
 
@@ -23,7 +21,6 @@ class CreditPackage {
         name: j['name'] as String,
         credits: (j['credits'] as num).toInt(),
         priceIdr: (j['priceIdr'] as num).toInt(),
-        description: j['description'] as String?,
         sortOrder: (j['sortOrder'] as num?)?.toInt(),
       );
 }
